@@ -7,7 +7,7 @@ IS-IS/Flex-Algo/SRv6 対応 FRRouting
 
 Flex-Algo については下記のインターネットドラフトを参照。
 
-- https://tools.ietf.org/html/draft-ietf-lsr-flex-algo-05#page-15
+- https://tools.ietf.org/html/draft-ietf-lsr-flex-algo-05
 
 とりあえず Metric-Type と Calc-Type はそれぞれ 0(IGP Metric) と 0(SPF) のみ対応で、
 アドミニストレーティブグループを用いたトポロジー制約に対応しています。
