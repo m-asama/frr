@@ -1975,6 +1975,359 @@ void cli_show_isis_log_adjacency(struct vty *vty, struct lyd_node *dnode,
 	vty_out(vty, " log-adjacency-changes\n");
 }
 
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6
+ */
+
+void cli_show_isis_srv6(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l1-to-l2
+ */
+
+DEFPY(isis_flex_algo_export_fapm_from_l1_to_l2,
+      isis_flex_algo_export_fapm_from_l1_to_l2_cmd,
+      "flex-algo export-fapm from-l1-to-l2",
+      "Flex Algorithm\n"
+      "Export Flex-Algo Prefix Metric\n"
+      "From LEVEL-1 To LEVEL-2\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6");
+	nb_cli_enqueue_change(vty, "./flex-algo-export-fapm-from-l1-to-l2", NB_OP_MODIFY, "true");
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+DEFPY(no_isis_flex_algo_export_fapm_from_l1_to_l2,
+      no_isis_flex_algo_export_fapm_from_l1_to_l2_cmd,
+      "no flex-algo export-fapm from-l1-to-l2",
+      NO_STR
+      "Flex Algorithm\n"
+      "Export Flex-Algo Prefi Metric\n"
+      "From LEVEL-1 TO LEVEL-2\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6");
+	nb_cli_enqueue_change(vty, "./flex-algo-export-fapm-from-l1-to-l2", NB_OP_MODIFY, "false");
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+void cli_show_isis_srv6_flex_algo_export_fapm_from_l1_to_l2(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	if (yang_dnode_get_bool(dnode->parent, "./flex-algo-export-fapm_from-l1-to-l2"))
+		vty_out(vty, " flex-algo export-fapm from-l1-to-l2\n");
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l2-to-l1
+ */
+
+DEFPY(isis_flex_algo_export_fapm_from_l2_to_l1,
+      isis_flex_algo_export_fapm_from_l2_to_l1_cmd,
+      "flex-algo export-fapm from-l2-to-l1",
+      "Flex Algorithm\n"
+      "Export Flex-Algo Prefix Metric\n"
+      "From LEVEL-2 to LEVEL-1\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6");
+	nb_cli_enqueue_change(vty, "./flex-algo-export-fapm-from-l2-to-l1", NB_OP_MODIFY, "true");
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+DEFPY(no_isis_flex_algo_export_fapm_from_l2_to_l1,
+      no_isis_flex_algo_export_fapm_from_l2_to_l1_cmd,
+      "no flex-algo export-fapm from-l2-to-l1",
+      NO_STR
+      "Flex Algorithm\n"
+      "Export Flex-Algo Prefix Metric\n"
+      "From LEVEL-2 to LEVEL-1\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6");
+	nb_cli_enqueue_change(vty, "./flex-algo-export-fapm-from-l2-to-l1", NB_OP_MODIFY, "false");
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+void cli_show_isis_srv6_flex_algo_export_fapm_from_l2_to_l1(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	if (yang_dnode_get_bool(dnode->parent, "./flex-algo-export-fapm-from-l2-to-l1"))
+		vty_out(vty, " flex-algo export-fapm from-l2-to-l1\n");
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map
+ */
+
+DEFPY(isis_affinity_map,
+      isis_affinity_map_cmd,
+      "affinity-map WORD$name bit-position (0-255)$pos",
+      "Affinity map\n"
+      "Affinity map name\n"
+      "Affinity map bit position\n"
+      "Affinity map bit position\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/affinity-map[affinity-map-name='%s']", name);
+	nb_cli_enqueue_change(vty, ".", NB_OP_CREATE, NULL);
+	nb_cli_enqueue_change(vty, "./bit-position", NB_OP_MODIFY, pos_str);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+DEFPY(no_isis_affinity_map,
+      no_isis_affinity_map_cmd,
+      "no affinity-map WORD$name",
+      NO_STR
+      "Affinity map\n"
+      "Affinity map name\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/affinity-map[affinity-map-name='%s']", name);
+	nb_cli_enqueue_change(vty, ".", NB_OP_DESTROY, NULL);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+void cli_show_isis_srv6_affinity_map(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	vty_out(vty, " affinity-map %s bit-position %s\n",
+			yang_dnode_get_string(dnode, "./affinity-map-name"),
+			yang_dnode_get_string(dnode, "./bit-position"));
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map/affinity-map-name
+ */
+
+void cli_show_isis_srv6_affinity_map_affinity_map_name(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map/bit-position
+ */
+
+void cli_show_isis_srv6_affinity_map_bit_position(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo
+ */
+
+DEFPY(isis_flex_algo,
+      isis_flex_algo_cmd,
+      "flex-algo (128-255)$algonum"
+      " [exclude affinity WORD$exc]"
+      " [include-any affinity WORD$incany]"
+      " [include-all affinity WORD$incall]"
+      " [use-fapm$fapm]"
+      " [priority (0-255)$prio]",
+      "Flexible algorithm\n"
+      "Flexible algorithm number\n"
+      "Exclude affinity\n"
+      "Exclude affinity\n"
+      "Exclude affinity\n"
+      "Include any affinity\n"
+      "Include any affinity\n"
+      "Include any affinity\n"
+      "Include all affinity\n"
+      "Include all affinity\n"
+      "Include all affinity\n"
+      "Use Flex-Algo Prefix Metric\n"
+      "Priority\n"
+      "Priority\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/flex-algo[algo-num='%s']", algonum_str);
+	nb_cli_enqueue_change(vty, ".", NB_OP_CREATE, NULL);
+	if (exc)
+		nb_cli_enqueue_change(vty, "./exclude-affinity", NB_OP_MODIFY, exc);
+	if (incany)
+		nb_cli_enqueue_change(vty, "./include-any-affinity", NB_OP_MODIFY, incany);
+	if (incall)
+		nb_cli_enqueue_change(vty, "./include-all-affinity", NB_OP_MODIFY, incall);
+	nb_cli_enqueue_change(vty, "./use-fapm", NB_OP_MODIFY, fapm ? "true" : "false");
+	if (prio_str)
+		nb_cli_enqueue_change(vty, "./priority", NB_OP_MODIFY, prio_str);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+DEFPY(no_isis_flex_algo,
+      no_isis_flex_algo_cmd,
+      "no flex-algo (128-255)$algonum",
+      NO_STR
+      "Flexible algorithm\n"
+      "Flexible algorithm number\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/flex-algo[algo-num='%s']", algonum_str);
+	nb_cli_enqueue_change(vty, ".", NB_OP_DESTROY, NULL);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+void cli_show_isis_srv6_flex_algo(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	vty_out(vty, " flex-algo %s", yang_dnode_get_string(dnode, "./algo-num"));
+	if (yang_dnode_exists(dnode, "./exclude-affinity"))
+		vty_out(vty, " exclude affinity %s", yang_dnode_get_string(dnode, "./exclude-affinity"));
+	if (yang_dnode_exists(dnode, "./include-any-affinity"))
+		vty_out(vty, " include-any affinity %s", yang_dnode_get_string(dnode, "./include-any-affinity"));
+	if (yang_dnode_exists(dnode, "./include-all-affinity"))
+		vty_out(vty, " include-all affinity %s", yang_dnode_get_string(dnode, "./include-all-affinity"));
+	if (yang_dnode_get_bool(dnode, "./use-fapm"))
+		vty_out(vty, " use-fapm");
+	if (yang_dnode_get_uint32(dnode, "./priority"))
+		vty_out(vty, " priority %s", yang_dnode_get_string(dnode, "./priority"));
+	vty_out(vty, "\n");
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/algo-num
+ */
+
+void cli_show_isis_srv6_flex_algo_algo_num(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/exclude-affinity
+ */
+
+void cli_show_isis_srv6_flex_algo_exclude_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/include-any-affinity
+ */
+
+void cli_show_isis_srv6_flex_algo_include_any_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/include-all-affinity
+ */
+
+void cli_show_isis_srv6_flex_algo_include_all_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/use-fapm
+ */
+
+void cli_show_isis_srv6_flex_algo_use_fapm(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/priority
+ */
+
+void cli_show_isis_srv6_flex_algo_priority(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/srv6-locator
+ */
+
+DEFPY(isis_srv6_locator,
+      isis_srv6_locator_cmd,
+      "srv6-locator WORD$locname algorithm (0-255)$algonum",
+      "SRv6 locator\n"
+      "SRv6 locator name\n"
+      "SRv6 locator algorithm\n"
+      "SRv6 locator algorithm number\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/srv6-locator[srv6-locator-name='%s']", locname);
+	nb_cli_enqueue_change(vty, ".", NB_OP_CREATE, NULL);
+	nb_cli_enqueue_change(vty, "./algorithm", NB_OP_MODIFY, algonum_str);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+DEFPY(no_isis_srv6_locator,
+      no_isis_srv6_locator_cmd,
+      "no srv6-locator WORD$locname",
+      NO_STR
+      "SRv6 locator\n"
+      "SRv6 locator name\n")
+{
+	char base_xpath[XPATH_MAXLEN];
+	snprintf(base_xpath, XPATH_MAXLEN, "./srv6/srv6-locator[srv6-locator-name='%s']", locname);
+	nb_cli_enqueue_change(vty, ".", NB_OP_DESTROY, NULL);
+	return nb_cli_apply_changes(vty, base_xpath);
+}
+
+void cli_show_isis_srv6_srv6_locator(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	vty_out(vty, " srv6-locator %s algorithm %s\n",
+			yang_dnode_get_string(dnode, "./srv6-locator-name"),
+			yang_dnode_get_string(dnode, "./algorithm"));
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/srv6-locator/algorithm
+ */
+
+void cli_show_isis_srv6_srv6_locator_algorithm(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+}
+
+/*
+ * XPath:
+ * /frr-interface:lib/interface/frr-isisd:isis/srv6/affinity-flex-algo
+ */
+
+DEFPY(isis_affinity_flex_algo,
+      isis_affinity_flex_algo_cmd,
+      "isis affinity flex-algo WORD$affname",
+      "IS-IS routing protocol\n"
+      "Affinity\n"
+      "Flexible algorithm affinity\n"
+      "Flexible algorithm affinity name\n")
+{
+	nb_cli_enqueue_change(vty, "./frr-isisd:isis/srv6/affinity-flex-algo", NB_OP_CREATE, affname);
+	return nb_cli_apply_changes(vty, NULL);
+}
+
+DEFPY(no_isis_affinity_flex_algo,
+      no_isis_affinity_flex_algo_cmd,
+      "no isis affinity flex-algo WORD$affname",
+      NO_STR
+      "IS-IS routing protocol\n"
+      "Affinity\n"
+      "Flexible algorithm affinity\n"
+      "Flexible algorithm affinity name\n")
+{
+	nb_cli_enqueue_change(vty, "./frr-isisd:isis/srv6/affinity-flex-algo", NB_OP_DESTROY, affname);
+	return nb_cli_apply_changes(vty, NULL);
+}
+
+void cli_show_isis_srv6_if_affinity_flex_algo(struct vty *vty, struct lyd_node *dnode, bool show_defaults)
+{
+	vty_out(vty, " isis affinity flex-algo %s\n",yang_dnode_get_string(dnode, "."));
+}
+
 void isis_cli_init(void)
 {
 	install_element(CONFIG_NODE, &router_isis_cmd);
@@ -2064,6 +2417,19 @@ void isis_cli_init(void)
 	install_element(INTERFACE_NODE, &no_isis_priority_cmd);
 
 	install_element(ISIS_NODE, &log_adj_changes_cmd);
+
+	install_element(ISIS_NODE, &isis_affinity_map_cmd);
+	install_element(ISIS_NODE, &no_isis_affinity_map_cmd);
+	install_element(ISIS_NODE, &isis_flex_algo_cmd);
+	install_element(ISIS_NODE, &no_isis_flex_algo_cmd);
+	install_element(ISIS_NODE, &isis_srv6_locator_cmd);
+	install_element(ISIS_NODE, &no_isis_srv6_locator_cmd);
+	install_element(ISIS_NODE, &isis_flex_algo_export_fapm_from_l1_to_l2_cmd);
+	install_element(ISIS_NODE, &no_isis_flex_algo_export_fapm_from_l1_to_l2_cmd);
+	install_element(ISIS_NODE, &isis_flex_algo_export_fapm_from_l2_to_l1_cmd);
+	install_element(ISIS_NODE, &no_isis_flex_algo_export_fapm_from_l2_to_l1_cmd);
+	install_element(INTERFACE_NODE, &isis_affinity_flex_algo_cmd);
+	install_element(INTERFACE_NODE, &no_isis_affinity_flex_algo_cmd);
 }
 
 #endif /* ifndef FABRICD */

@@ -30,6 +30,7 @@
 #include "isisd/isis_redist.h"
 #include "isisd/isis_pdu_counter.h"
 #include "isisd/isis_circuit.h"
+#include "isisd/isis_tlvs.h"
 #include "isis_flags.h"
 #include "isis_lsp.h"
 #include "isis_memory.h"
@@ -79,6 +80,8 @@ struct isis {
 
 	struct route_table *ext_info[REDIST_PROTOCOL_COUNT];
 
+	struct list *srv6_locators;
+
 	QOBJ_FIELDS
 };
 
@@ -89,6 +92,7 @@ enum spf_tree_id {
 	SPFTREE_IPV4 = 0,
 	SPFTREE_IPV6,
 	SPFTREE_DSTSRC,
+	SPFTREE_FLEXALGO,
 	SPFTREE_COUNT
 };
 
@@ -184,6 +188,15 @@ struct isis_area {
 	pdu_counter_t pdu_tx_counters;
 	pdu_counter_t pdu_rx_counters;
 	uint64_t lsp_rxmt_count;
+
+	/* config */
+	bool srv6_flex_algo_export_fapm_from_l1_to_l2;
+	bool srv6_flex_algo_export_fapm_from_l2_to_l1;
+	struct list *srv6_locators;
+	struct list *srv6_affinity_maps;
+	struct list *srv6_flex_algo_definitions;
+	/* state */
+	struct list *srv6_flex_algo_participates;
 
 	QOBJ_FIELDS
 };

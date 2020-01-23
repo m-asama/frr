@@ -222,7 +222,6 @@ void route_entry_nexthop_delete(struct route_entry *re, struct nexthop *nexthop)
 	re->nexthop_num--;
 }
 
-
 struct nexthop *route_entry_nexthop_ifindex_add(struct route_entry *re,
 						ifindex_t ifindex,
 						vrf_id_t nh_vrf_id)

@@ -20,6 +20,7 @@
 #include <zebra.h>
 
 #include "command.h"
+#include "linklist.h"
 #include "vty.h"
 #include "vrf.h"
 #include "prefix.h"
@@ -28,10 +29,12 @@
 #include "srcdest_table.h"
 #include "mpls.h"
 
+#include "static_srv6.h"
 #include "static_vrf.h"
 #include "static_memory.h"
 #include "static_vty.h"
 #include "static_routes.h"
+#include "static_zebra.h"
 #ifndef VTYSH_EXTRACT_PL
 #include "staticd/static_vty_clippy.c"
 #endif
@@ -1424,6 +1427,68 @@ DEFPY(ipv6_route_vrf,
 		table_str, false);
 }
 
+DEFPY(function_locator,
+      function_locator_cmd,
+      "function <auto$pauto|X:X::X:X/M$prefix> locator WORD$locname action"
+      " {"
+      "   end$end"
+      " | endx IFNAME$endx"
+      " | enddx4 IFNAME$endx4"
+      " | enddx6 IFNAME$endx6"
+      " }",
+      "Function\n"
+      "Function prefix auto\n"
+      "Function prefix\n"
+      "Locator\n"
+      "Locator name\n"
+      "Action\n"
+      "Action End function\n"
+      "Action End.X function\n" "Destination interface name\n"
+      "Action End.DX4 function\n" "Destination interface name\n"
+      "Action End.DX6 function\n" "Destination interface name\n"
+     )
+{
+	struct static_srv6_locator *locator;
+	struct static_srv6_function *function;
+	struct prefix_ipv6 fprefix = {.family = AF_INET6};
+	locator = static_srv6_locator_lookup(locname);
+	if (!locator) {
+		return CMD_WARNING_CONFIG_FAILED;
+	}
+	if (prefix_str) {
+		fprefix = *prefix;
+	}
+	function = static_srv6_function_alloc(&fprefix);
+	if (!function) {
+		return CMD_WARNING_CONFIG_FAILED;
+	}
+	static_srv6_function_add(function, locator);
+	return CMD_SUCCESS;
+}
+
+DEFPY(no_function_locator,
+      no_function_locator_cmd,
+      "no function X:X::X:X/M$prefix locator WORD$locname",
+      NO_STR
+      "Function\n"
+      "Function prefix\n"
+      "Locator\n"
+      "Locator name\n")
+{
+	struct static_srv6_locator *locator;
+	struct static_srv6_function *function;
+	locator = static_srv6_locator_lookup(locname);
+	if (!locator) {
+		return CMD_WARNING_CONFIG_FAILED;
+	}
+	function = static_srv6_function_lookup(locator, prefix);
+	if (!function) {
+		return CMD_WARNING_CONFIG_FAILED;
+	}
+	static_srv6_function_delete(function, locator);
+	return CMD_SUCCESS;
+}
+
 DEFUN_NOSH (show_debugging_staticd,
 	    show_debugging_staticd_cmd,
 	    "show debugging [static]",
@@ -1435,6 +1500,55 @@ DEFUN_NOSH (show_debugging_staticd,
 
 	return CMD_SUCCESS;
 }
+
+DEFUN_NOSH (segment_routing_ipv6,
+            segment_routing_ipv6_cmd,
+            "segment-routing-ipv6",
+            "Segment Routing IPv6\n")
+{
+	vty->node = SRV6_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUN_NOSH (no_segment_routing_ipv6,
+            no_segment_routing_ipv6_cmd,
+            "no segment-routing-ipv6",
+            NO_STR
+            "negate Segment Routing IPv6\n")
+{
+	if (vty->node == SRV6_NODE)
+		vty->node = CONFIG_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUN (show_srv6_debug,
+       show_srv6_debug_cmd,
+       "show srv6 debug",
+       SHOW_STR
+       "SRv6\n"
+       DEBUG_STR)
+{
+	struct static_srv6_locator *locator;
+	struct static_srv6_function *function;
+	struct listnode *nodel, *nodef;
+	char strl[256], strf[256];
+	struct list *srv6_locators = static_srv6_locators();
+	vty_out(vty, "Function:\n");
+	vty_out(vty, "Locator Name         Prefix                   Ownter\n");
+	vty_out(vty, "-------------------- ------------------------ ---------------\n");
+	for (ALL_LIST_ELEMENTS_RO(srv6_locators, nodel, locator)) {
+		prefix2str(&locator->prefix, strl, sizeof(strl));
+		for (ALL_LIST_ELEMENTS_RO(locator->functions, nodef, function)) {
+			prefix2str(&function->prefix, strf, sizeof(strf));
+			vty_out(vty, "%-20s %-24s %-15s\n", locator->name, strf,
+					zebra_route_string(function->owner_proto));
+		}
+	}
+	vty_out(vty, "\n");
+	return CMD_SUCCESS;
+}
+
+static struct cmd_node srv6_node = {SRV6_NODE, "%s(config-srv6)# ", 1};
 
 void static_vty_init(void)
 {
@@ -1453,6 +1567,14 @@ void static_vty_init(void)
 	install_element(VRF_NODE, &ipv6_route_address_interface_vrf_cmd);
 	install_element(CONFIG_NODE, &ipv6_route_cmd);
 	install_element(VRF_NODE, &ipv6_route_vrf_cmd);
+
+	install_element(CONFIG_NODE, &segment_routing_ipv6_cmd);
+	install_element(CONFIG_NODE, &no_segment_routing_ipv6_cmd);
+	install_node(&srv6_node, static_srv6_config);
+	install_default(SRV6_NODE);
+	install_element(SRV6_NODE, &function_locator_cmd);
+	install_element(SRV6_NODE, &no_function_locator_cmd);
+	install_element(VIEW_NODE, &show_srv6_debug_cmd);
 
 	install_element(VIEW_NODE, &show_debugging_staticd_cmd);
 

@@ -57,6 +57,7 @@
 #include "isisd/isis_te.h"
 #include "isisd/isis_mt.h"
 #include "isisd/fabricd.h"
+#include "isis_spf_private.h"
 
 struct isis *isis = NULL;
 
@@ -93,6 +94,8 @@ void isis_new(unsigned long process_id)
 	 * uncomment the next line for full debugs
 	 */
 	/* isis->debugs = 0xFFFF; */
+
+	isis->srv6_locators = list_new();
 
 	QOBJ_REG(isis, isis);
 }
@@ -192,6 +195,13 @@ struct isis_area *isis_area_create(const char *area_tag)
 	area->lsp_refresh_arg[1].area = area;
 	area->lsp_refresh_arg[1].level = IS_LEVEL_2;
 
+	area->srv6_flex_algo_export_fapm_from_l1_to_l2 = false;
+	area->srv6_flex_algo_export_fapm_from_l2_to_l1 = false;
+	area->srv6_locators = list_new();
+	area->srv6_affinity_maps = list_new();
+	area->srv6_flex_algo_definitions = list_new();
+	area->srv6_flex_algo_participates = list_new();
+	area->srv6_flex_algo_participates->cmp = isis_srv6_flex_algo_participate_cmp;
 
 	QOBJ_REG(area, isis_area);
 
@@ -249,6 +259,39 @@ int isis_area_destroy(const char *area_tag)
 	}
 
 	QOBJ_UNREG(area);
+
+	if (area->srv6_flex_algo_participates) {
+		struct isis_srv6_flex_algo_participate *participate;
+		for (ALL_LIST_ELEMENTS(area->srv6_flex_algo_participates, node, nnode, participate)) {
+			isis_srv6_flex_algo_participate_delete(participate, area);
+			isis_srv6_flex_algo_participate_free(participate);
+		}
+		list_delete(&area->srv6_flex_algo_participates);
+	}
+	if (area->srv6_flex_algo_definitions) {
+		struct isis_srv6_flex_algo_definition *flex_algo;
+		for (ALL_LIST_ELEMENTS(area->srv6_flex_algo_definitions, node, nnode, flex_algo)) {
+			isis_srv6_flex_algo_definition_delete(flex_algo, area);
+			isis_srv6_flex_algo_definition_free(flex_algo);
+		}
+		list_delete(&area->srv6_flex_algo_definitions);
+	}
+	if (area->srv6_affinity_maps) {
+		struct isis_srv6_affinity_map *affinity_map;
+		for (ALL_LIST_ELEMENTS(area->srv6_affinity_maps, node, nnode, affinity_map)) {
+			isis_srv6_affinity_map_delete(affinity_map, area);
+			isis_srv6_affinity_map_free(affinity_map);
+		}
+		list_delete(&area->srv6_affinity_maps);
+	}
+	if (area->srv6_locators) {
+		struct isis_srv6_locator *locator;
+		for (ALL_LIST_ELEMENTS(area->srv6_locators, node, nnode, locator)) {
+			isis_srv6_locator_delete(locator, area);
+			isis_srv6_locator_free(locator);
+		}
+		list_delete(&area->srv6_locators);
+	}
 
 	if (fabricd)
 		fabricd_finish(area->fabricd);
@@ -1238,6 +1281,7 @@ DEFUN (show_isis_summary,
 {
 	struct listnode *node, *node2;
 	struct isis_area *area;
+	struct isis_srv6_flex_algo_participate *participate;
 	int level;
 
 	if (isis == NULL) {
@@ -1323,6 +1367,11 @@ DEFUN (show_isis_summary,
 			vty_out(vty, "    IPv6 dst-src route computation:\n");
 			isis_spf_print(area->spftree[SPFTREE_DSTSRC][level-1],
 				       vty);
+
+			for (ALL_LIST_ELEMENTS_RO(area->srv6_flex_algo_participates, node, participate)) {
+				vty_out(vty, "    SRv6 Flex-Algo[%d] route computation:\n", participate->algonum);
+				isis_spf_print(participate->spftree[level - 1], vty);
+			}
 		}
 	}
 	vty_out(vty, "\n");
@@ -1663,33 +1712,75 @@ int isis_area_passwd_hmac_md5_set(struct isis_area *area, int level,
 
 void isis_area_invalidate_routes(struct isis_area *area, int levels)
 {
+	struct isis_srv6_flex_algo_participate *participate;
+	struct listnode *node;
 	for (int level = ISIS_LEVEL1; level <= ISIS_LEVEL2; level++) {
 		if (!(level & levels))
 			continue;
 		for (int tree = SPFTREE_IPV4; tree < SPFTREE_COUNT; tree++) {
+			if (tree == SPFTREE_FLEXALGO)
+				continue;
 			isis_spf_invalidate_routes(
 					area->spftree[tree][level - 1]);
+		}
+		for (ALL_LIST_ELEMENTS_RO(area->srv6_flex_algo_participates, node, participate)) {
+			isis_spf_invalidate_routes(participate->spftree[level - 1]);
 		}
 	}
 }
 
 void isis_area_verify_routes(struct isis_area *area)
 {
-	for (int tree = SPFTREE_IPV4; tree < SPFTREE_COUNT; tree++)
-		isis_spf_verify_routes(area, area->spftree[tree]);
+	struct isis_srv6_flex_algo_participate *participate;
+	struct listnode *node;
+	for (int tree = SPFTREE_IPV4; tree < SPFTREE_COUNT; tree++) {
+		struct route_table *tables[SR_ALGORITHM_COUNT * ISIS_LEVELS + 1] = {};
+		int index = 0;
+		if (tree == SPFTREE_FLEXALGO)
+			continue;
+		if (tree == SPFTREE_IPV6) {
+			if (area->is_type == IS_LEVEL_1 || area->is_type == IS_LEVEL_1_AND_2) {
+				for (ALL_LIST_ELEMENTS_RO(area->srv6_flex_algo_participates, node, participate)) {
+					tables[index++] = participate->spftree[0]->route_table;
+				}
+			}
+			if (area->is_type == IS_LEVEL_2 || area->is_type == IS_LEVEL_1_AND_2) {
+				for (ALL_LIST_ELEMENTS_RO(area->srv6_flex_algo_participates, node, participate)) {
+					tables[index++] = participate->spftree[1]->route_table;
+				}
+			}
+		}
+		if (area->is_type == IS_LEVEL_1 || area->is_type == IS_LEVEL_1_AND_2) {
+			tables[index++] = area->spftree[tree][0]->route_table;
+		}
+		if (area->is_type == IS_LEVEL_2 || area->is_type == IS_LEVEL_1_AND_2) {
+			tables[index++] = area->spftree[tree][1]->route_table;
+		}
+		isis_route_verify_merge(area, tables);
+	}
 }
 
 static void area_resign_level(struct isis_area *area, int level)
 {
+	struct isis_srv6_flex_algo_participate *participate;
+	struct listnode *node;
 	isis_area_invalidate_routes(area, level);
 	isis_area_verify_routes(area);
 
 	lsp_db_fini(&area->lspdb[level - 1]);
 
 	for (int tree = SPFTREE_IPV4; tree < SPFTREE_COUNT; tree++) {
+		if (tree == SPFTREE_FLEXALGO)
+			continue;
 		if (area->spftree[tree][level - 1]) {
 			isis_spftree_del(area->spftree[tree][level - 1]);
 			area->spftree[tree][level - 1] = NULL;
+		}
+	}
+	for (ALL_LIST_ELEMENTS_RO(area->srv6_flex_algo_participates, node, participate)) {
+		if (participate->spftree[level - 1]) {
+			isis_spftree_del(participate->spftree[level - 1]);
+			participate->spftree[level - 1] = NULL;
 		}
 	}
 

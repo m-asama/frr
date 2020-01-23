@@ -37,6 +37,7 @@
 
 #include "zebra/zebra_router.h"
 #include "zebra/zserv.h"
+#include "zebra/zebra_srv6.h"
 #include "zebra/zebra_vrf.h"
 #include "zebra/zebra_mpls.h"
 #include "zebra/zebra_rnh.h"

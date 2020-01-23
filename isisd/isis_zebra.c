@@ -50,6 +50,7 @@
 #include "isisd/isis_route.h"
 #include "isisd/isis_zebra.h"
 #include "isisd/isis_te.h"
+#include "isisd/isis_srv6.h"
 
 struct zclient *zclient = NULL;
 
@@ -368,6 +369,50 @@ static int isis_zebra_read(ZAPI_CALLBACK_ARGS)
 	return 0;
 }
 
+static int zrecv_isis_srv6_locator_add(ZAPI_CALLBACK_ARGS)
+{
+	struct zapi_srv6_locator api;
+	struct isis_srv6_locator *locator;
+	char str[256];
+	zapi_srv6_locator_decode(zclient->ibuf, &api);
+	inet_ntop(AF_INET6, &api.prefix.prefix, str, sizeof(str));
+	locator = isis_srv6_locator_alloc(api.name);
+	if (!locator) {
+		zlog_err("zrecv_isis_srv6_locator_add: alloc failed");
+		return 1;
+	}
+	locator->prefix = api.prefix;
+	locator->function_bits_length = api.function_bits_length;
+	isis_srv6_locator_add_zebra(locator);
+	return 0;
+}
+
+static int zrecv_isis_srv6_locator_delete(ZAPI_CALLBACK_ARGS)
+{
+	struct zapi_srv6_locator api;
+	struct isis_srv6_locator *locator;
+	char str[256];
+	zapi_srv6_locator_decode(zclient->ibuf, &api);
+	inet_ntop(AF_INET6, &api.prefix.prefix, str, sizeof(str));
+	locator = isis_srv6_locator_lookup_zebra(api.name);
+	if (!locator) {
+		zlog_err("zrecv_isis_srv6_locator_delete: lookup failed");
+		return 1;
+	}
+	isis_srv6_locator_delete_zebra(locator);
+	return 0;
+}
+
+static int zrecv_isis_srv6_function_add(ZAPI_CALLBACK_ARGS)
+{
+	return 0;
+}
+
+static int zrecv_isis_srv6_function_delete(ZAPI_CALLBACK_ARGS)
+{
+	return 0;
+}
+
 int isis_distribute_list_update(int routetype)
 {
 	return 0;
@@ -413,6 +458,10 @@ void isis_zebra_init(struct thread_master *master)
 	zclient->interface_link_params = isis_zebra_link_params;
 	zclient->redistribute_route_add = isis_zebra_read;
 	zclient->redistribute_route_del = isis_zebra_read;
+	zclient->srv6_locator_add = zrecv_isis_srv6_locator_add;
+	zclient->srv6_locator_delete = zrecv_isis_srv6_locator_delete;
+	zclient->srv6_function_add = zrecv_isis_srv6_function_add;
+	zclient->srv6_function_delete = zrecv_isis_srv6_function_delete;
 
 	return;
 }

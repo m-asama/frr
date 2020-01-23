@@ -718,6 +718,83 @@ module frr-isisd {
             "Stable IP address of the advertising router.";
         }
       }
+
+      container srv6 {
+        presence "Present if SRv6 is enabled.";
+        description "Enable SRv6 functionality.";
+        leaf flex-algo-export-fapm-from-l1-to-l2 {
+          type boolean;
+          default "false";
+          description "flex-algo-export-fapm-from-l1-to-l2.";
+        }
+        leaf flex-algo-export-fapm-from-l2-to-l1 {
+          type boolean;
+          default "false";
+          description "flex-algo-export-fapm-from-l2-to-l1.";
+        }
+        list affinity-map {
+          key affinity-map-name;
+          leaf affinity-map-name {
+            type string {
+              length "1..254";
+            }
+            description "affinity-map-name.";
+          }
+          leaf bit-position {
+            type uint32 {
+              range "0..255";
+            }
+            description "bit-position.";
+          }
+        }
+        list flex-algo {
+          key algo-num;
+          leaf algo-num {
+            type uint32 {
+              range "128..255";
+            }
+            description "algo-num.";
+          }
+          leaf exclude-affinity {
+            type string;
+            description "exclude-affinity.";
+          }
+          leaf include-any-affinity {
+            type string;
+            description "include-any-affinity.";
+          }
+          leaf include-all-affinity {
+            type string;
+            description "include-all-affinity.";
+          }
+          leaf use-fapm {
+            type boolean;
+            default "false";
+            description "use-fapm.";
+          }
+          leaf priority {
+            type uint32 {
+              range "0..255";
+            }
+            description "priority.";
+          }
+        }
+        list srv6-locator {
+          key srv6-locator-name;
+          leaf srv6-locator-name {
+            type string {
+              length "1..254";
+            }
+            description "srv6-locator-name.";
+          }
+          leaf algorithm {
+            type uint32 {
+              range "0..255";
+            }
+            description "algorithm.";
+          }
+        }
+      }
     }
   }
 
@@ -990,6 +1067,13 @@ module frr-isisd {
           default "true";
           description
             "IPv6 destination-source topology.";
+        }
+      }
+
+      container srv6 {
+        leaf affinity-flex-algo {
+          type string;
+          description "affinity-flex-algo.";
         }
       }
     }

@@ -138,6 +138,7 @@ const char *node_names[] = {
 	"forwarding",		    // FORWARDING_NODE,
 	"protocol",		    // PROTOCOL_NODE,
 	"mpls",			    // MPLS_NODE,
+	"srv6",			    // SRV6_NODE,
 	"pw",			    // PW_NODE,
 	"vty",			    // VTY_NODE,
 	"link-params",		    // LINK_PARAMS_NODE,
@@ -1476,6 +1477,7 @@ void cmd_exit(struct vty *vty)
 	case PBRMAP_NODE:
 	case VTY_NODE:
 	case BFD_NODE:
+	case SRV6_NODE:
 		vty->node = CONFIG_NODE;
 		break;
 	case BGP_IPV4_NODE:

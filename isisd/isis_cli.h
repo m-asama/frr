@@ -124,4 +124,21 @@ void cli_show_ip_isis_priority(struct vty *vty, struct lyd_node *dnode,
 void cli_show_isis_log_adjacency(struct vty *vty, struct lyd_node *dnode,
 				 bool show_defaults);
 
+void cli_show_isis_srv6(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_export_fapm_from_l1_to_l2(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_export_fapm_from_l2_to_l1(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_affinity_map(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_affinity_map_affinity_map_name(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_affinity_map_bit_position(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_algo_num(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_exclude_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_include_any_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_include_all_affinity(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_use_fapm(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_flex_algo_priority(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_srv6_locator(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_srv6_locator_algorithm(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+void cli_show_isis_srv6_if_affinity_flex_algo(struct vty *vty, struct lyd_node *dnode, bool show_defaults);
+
 #endif /* ISISD_ISIS_CLI_H_ */

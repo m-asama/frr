@@ -775,6 +775,9 @@ static void lsp_flood_or_update(struct isis_lsp *lsp,
 		lsp_flood(lsp, circuit);
 	else
 		fabricd_update_lsp_no_flood(lsp, circuit);
+	/* XXX: */
+	if (circuit && circuit->area && isis_srv6_flex_algo_participate_update(circuit->area))
+		lsp_regenerate_schedule(circuit->area, circuit->area->is_type, 0);
 }
 
 /*

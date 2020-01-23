@@ -2838,6 +2838,22 @@ static int zclient_read(struct thread *thread)
 			(*zclient->vxlan_sg_del)(command, zclient, length,
 						    vrf_id);
 		break;
+	case ZEBRA_SRV6_LOCATOR_ADD:
+		if (zclient->srv6_locator_add)
+			(*zclient->srv6_locator_add)(command, zclient, length, vrf_id);
+		break;
+	case ZEBRA_SRV6_LOCATOR_DELETE:
+		if (zclient->srv6_locator_delete)
+			(*zclient->srv6_locator_delete)(command, zclient, length, vrf_id);
+		break;
+	case ZEBRA_SRV6_FUNCTION_ADD:
+		if (zclient->srv6_function_add)
+			(*zclient->srv6_function_add)(command, zclient, length, vrf_id);
+		break;
+	case ZEBRA_SRV6_FUNCTION_DELETE:
+		if (zclient->srv6_function_delete)
+			(*zclient->srv6_function_delete)(command, zclient, length, vrf_id);
+		break;
 	default:
 		break;
 	}
@@ -2953,4 +2969,30 @@ void zclient_interface_set_master(struct zclient *client,
 
 	stream_putw_at(s, 0, stream_get_endp(s));
 	zclient_send_message(client);
+}
+
+int zapi_srv6_locator_decode(struct stream *s, struct zapi_srv6_locator *locator)
+{
+	unsigned char namelen;
+	STREAM_GETC(s, namelen);
+	stream_get(locator->name, s, namelen);
+	locator->name[namelen] = '\0';
+	stream_get(&locator->prefix, s, sizeof(locator->prefix));
+	locator->function_bits_length = stream_getc(s);
+stream_failure:
+	return 0;
+}
+
+int zapi_srv6_function_decode(struct stream *s, struct zapi_srv6_function *function)
+{
+	unsigned char namelen;
+	STREAM_GETC(s, namelen);
+	stream_get(function->locator_name, s, namelen);
+	function->locator_name[namelen] = '\0';
+	stream_get(&function->prefix, s, sizeof(function->prefix));
+	function->owner_proto = stream_getc(s);
+	function->owner_instance = stream_getw(s);
+	function->request_key = stream_getl(s);
+stream_failure:
+	return 0;
 }

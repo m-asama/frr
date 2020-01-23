@@ -37,6 +37,7 @@
 #include "pw.h"
 
 #include "mlag.h"
+#include "srv6.h"
 
 /* Zebra types. Used in Zserv message header. */
 typedef uint16_t zebra_size_t;
@@ -177,6 +178,10 @@ typedef enum {
 	ZEBRA_VXLAN_SG_ADD,
 	ZEBRA_VXLAN_SG_DEL,
 	ZEBRA_VXLAN_SG_REPLAY,
+	ZEBRA_SRV6_LOCATOR_ADD,
+	ZEBRA_SRV6_LOCATOR_DELETE,
+	ZEBRA_SRV6_FUNCTION_ADD,
+	ZEBRA_SRV6_FUNCTION_DELETE,
 } zebra_message_types_t;
 
 struct redist_proto {
@@ -275,6 +280,10 @@ struct zclient {
 	int (*iptable_notify_owner)(ZAPI_CALLBACK_ARGS);
 	int (*vxlan_sg_add)(ZAPI_CALLBACK_ARGS);
 	int (*vxlan_sg_del)(ZAPI_CALLBACK_ARGS);
+	int (*srv6_locator_add)(ZAPI_CALLBACK_ARGS);
+	int (*srv6_locator_delete)(ZAPI_CALLBACK_ARGS);
+	int (*srv6_function_add)(ZAPI_CALLBACK_ARGS);
+	int (*srv6_function_delete)(ZAPI_CALLBACK_ARGS);
 };
 
 /* Zebra API message flag. */
@@ -412,6 +421,20 @@ struct zapi_pw_status {
 	char ifname[IF_NAMESIZE];
 	ifindex_t ifindex;
 	uint32_t status;
+};
+
+struct zapi_srv6_locator {
+	char name[SRV6_LOCNAME_SIZE];
+	struct prefix_ipv6 prefix;
+	uint8_t function_bits_length;
+};
+
+struct zapi_srv6_function {
+	char locator_name[SRV6_LOCNAME_SIZE];
+	struct prefix_ipv6 prefix;
+	uint8_t owner_proto;
+	uint16_t owner_instance;
+	uint32_t request_key;
 };
 
 enum zapi_route_notify_owner {
@@ -670,5 +693,7 @@ static inline void zapi_route_set_blackhole(struct zapi_route *api,
 	SET_FLAG(api->message, ZAPI_MESSAGE_NEXTHOP);
 };
 
+extern int zapi_srv6_locator_decode(struct stream *s, struct zapi_srv6_locator *locator);
+extern int zapi_srv6_function_decode(struct stream *s, struct zapi_srv6_function *function);
 
 #endif /* _ZEBRA_ZCLIENT_H */

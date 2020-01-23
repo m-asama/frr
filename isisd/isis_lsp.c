@@ -940,6 +940,10 @@ static void lsp_build(struct isis_lsp *lsp, struct isis_area *area)
 			  area->area_tag);
 	}
 
+	/* XXX: */
+	lsp_debug("ISIS (%s): Adding capability information.", area->area_tag);
+	isis_tlvs_add_router_capability(lsp->tlvs, area);
+
 	lsp_debug("ISIS (%s): Adding circuit specific information.",
 		  area->area_tag);
 
@@ -1092,9 +1096,31 @@ static void lsp_build(struct isis_lsp *lsp, struct isis_area *area)
 		default:
 			zlog_warn("lsp_area_create: unknown circuit type");
 		}
+
+		if (!isis_srv6_affinity_maps_zero(circuit->affinity_flex_algo)) {
+			if (circuit->ext == NULL)
+				circuit->ext = isis_alloc_ext_subtlvs();
+			isis_tlvs_add_ag_flex_algo(circuit->ext, circuit->affinity_flex_algo);
+		}
 	}
 
 	lsp_build_ext_reach(lsp, area);
+
+	lsp_debug("ISIS (%s): Adding Flex-Algo Prefix Metric.", area->area_tag);
+	isis_tlvs_flex_algo_lsp_build_prefix_metrics(lsp, area);
+
+	/* XXX: */
+	lsp_debug("ISIS (%s): Adding SRv6 Locator TLV.", area->area_tag);
+	{
+		struct isis_srv6_locator *locator;
+		struct listnode *node;
+		struct prefix_ipv6 prefix_zero = { .family = AF_INET6, };
+		for (ALL_LIST_ELEMENTS_RO(area->srv6_locators, node, locator)) {
+			if (!prefix_cmp(&locator->prefix, &prefix_zero))
+				continue;
+			isis_tlvs_add_srv6_locator(lsp->tlvs, 10 /* XXX: */, 0, locator->algonum, locator->prefix);
+		}
+	}
 
 	struct isis_tlvs *tlvs = lsp->tlvs;
 	lsp->tlvs = NULL;

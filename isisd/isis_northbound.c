@@ -26,6 +26,7 @@
 #include "linklist.h"
 #include "log.h"
 #include "lib/bfd.h"
+#include "isisd/isis_srv6.h"
 #include "isisd/isis_bfd.h"
 #include "isisd/isis_constants.h"
 #include "isisd/isis_common.h"
@@ -2795,6 +2796,757 @@ void isis_notif_own_lsp_purge(const struct isis_circuit *circuit,
 	nb_notification_send(xpath, arguments);
 }
 
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6
+ */
+
+static int isis_srv6_srv6_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l1-to-l2
+ */
+
+static int isis_srv6_flex_algo_export_fapm_from_l1_to_l2_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_export_fapm_from_l1_to_l2_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_export_fapm_from_l1_to_l2_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	bool newval;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		newval = yang_dnode_get_bool(dnode->parent, "./flex-algo-export-fapm-from-l1-to-l2");
+		if (newval != area->srv6_flex_algo_export_fapm_from_l1_to_l2) {
+			area->srv6_flex_algo_export_fapm_from_l1_to_l2 = newval;
+			lsp_regenerate_schedule(area, area->is_type, 0);
+		}
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l2-to-l1
+ */
+
+static int isis_srv6_flex_algo_export_fapm_from_l2_to_l1_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_export_fapm_from_l2_to_l1_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_export_fapm_from_l2_to_l1_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	bool newval;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		newval = yang_dnode_get_bool(dnode->parent, "./flex-algo-export-fapm-from-l2-to-l1");
+		if (newval != area->srv6_flex_algo_export_fapm_from_l2_to_l1) {
+			area->srv6_flex_algo_export_fapm_from_l2_to_l1 = newval;
+			lsp_regenerate_schedule(area, area->is_type, 0);
+		}
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map
+ */
+
+static int isis_srv6_affinity_map_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *name;
+	struct isis_srv6_affinity_map *affinity_map;
+	int pos;
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	area = isis_area_lookup(area_tag);
+	name = yang_dnode_get_string(dnode, "./affinity-map-name");
+	pos = yang_dnode_get_uint32(dnode, "./bit-position");
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (!isis_srv6_affinity_map_name_valid(name)) {
+			return NB_ERR_VALIDATION;
+		}
+		if (isis_srv6_affinity_map_lookup(name, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		affinity_map = isis_srv6_affinity_map_alloc(name, pos);
+		isis_srv6_affinity_map_add(affinity_map, area);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	struct isis_area *area;
+	const char *area_tag, *name;
+	struct isis_srv6_affinity_map *affinity_map;
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	area = isis_area_lookup(area_tag);
+	name = yang_dnode_get_string(dnode, "./affinity-map-name");
+	affinity_map = isis_srv6_affinity_map_lookup(name, area);
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (!affinity_map) {
+			return NB_ERR_VALIDATION;
+		}
+		if (isis_srv6_affinity_map_name_used(name, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		isis_srv6_affinity_map_delete(affinity_map, area);
+		isis_srv6_affinity_map_free(affinity_map);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map/affinity-map-name
+ */
+
+static int isis_srv6_affinity_map_affinity_map_name_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_affinity_map_name_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_affinity_map_name_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/affinity-map/bit-position
+ */
+
+static int isis_srv6_affinity_map_bit_position_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_bit_position_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_affinity_map_bit_position_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *name;
+	struct isis_srv6_affinity_map *affinity_map;
+	int pos;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		name = yang_dnode_get_string(dnode->parent, "./affinity-map-name");
+		pos = yang_dnode_get_uint32(dnode->parent, "./bit-position");
+		affinity_map = isis_srv6_affinity_map_lookup(name, area);
+		if (affinity_map && affinity_map->bit_position != pos) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo
+ */
+
+static int isis_srv6_flex_algo_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	int algonum;
+	const char *exc_str, *incany_str, *incall_str;
+	uint32_t exc_arr[SRV6_AFFARR_SIZE] = {}, incany_arr[SRV6_AFFARR_SIZE] = {}, incall_arr[SRV6_AFFARR_SIZE] = {};
+	bool advdef = false;
+	uint32_t prio = SRV6_FLEXALGO_PRIO_DEFAULT;
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	area = isis_area_lookup(area_tag);
+	algonum = yang_dnode_get_uint32(dnode, "./algo-num");
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (isis_srv6_flex_algo_definition_lookup(algonum, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		if (yang_dnode_exists(dnode, "./exclude-affinity")) {
+			exc_str = yang_dnode_get_string(dnode, "./exclude-affinity");
+			isis_srv6_affinity_maps_set(exc_arr, exc_str, area);
+		}
+		if (yang_dnode_exists(dnode, "./include-any-affinity")) {
+			incany_str = yang_dnode_get_string(dnode, "./include-any-affinity");
+			isis_srv6_affinity_maps_set(incany_arr, incany_str, area);
+		}
+		if (yang_dnode_exists(dnode, "./include-all-affinity")) {
+			incall_str = yang_dnode_get_string(dnode, "./include-all-affinity");
+			isis_srv6_affinity_maps_set(incall_arr, incall_str, area);
+		}
+		if (yang_dnode_exists(dnode, "./use-fapm")) {
+			advdef = yang_dnode_get_bool(dnode, "./use-fapm");
+		}
+		if (yang_dnode_exists(dnode, "./priority")) {
+			prio = yang_dnode_get_uint32(dnode, "./priority");
+		}
+		flex_algo = isis_srv6_flex_algo_definition_alloc(algonum, exc_arr, incany_arr, incall_arr, advdef, prio);
+		isis_srv6_flex_algo_definition_add(flex_algo, area);
+		/* XXX: */
+		//isis_srv6_algo_update(area);
+		//lsp_regenerate_schedule(area, area->is_type, 0);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	int algonum;
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	area = isis_area_lookup(area_tag);
+	algonum = yang_dnode_get_uint32(dnode, "./algo-num");
+	flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (!flex_algo) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		isis_srv6_flex_algo_definition_delete(flex_algo, area);
+		isis_srv6_flex_algo_definition_free(flex_algo);
+		/* XXX: */
+		//isis_srv6_algo_update(area);
+		//lsp_regenerate_schedule(area, area->is_type, 0);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/algo-num
+ */
+
+static int isis_srv6_flex_algo_algo_num_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_algo_num_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_algo_num_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && algonum != flex_algo->algonum) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/exclude-affinity
+ */
+
+static int isis_srv6_flex_algo_exclude_affinity_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_exclude_affinity_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_exclude_affinity_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *affstr;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	uint32_t affarr[SRV6_AFFARR_SIZE];
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		affstr = yang_dnode_get_string(dnode->parent, "./exclude-affinity");
+		if (!isis_srv6_affinity_maps_set(affarr, affstr, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && !isis_srv6_affinity_maps_eq(affarr, flex_algo->exclude)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/include-any-affinity
+ */
+
+static int isis_srv6_flex_algo_include_any_affinity_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_include_any_affinity_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_include_any_affinity_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *affstr;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	uint32_t affarr[SRV6_AFFARR_SIZE];
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		affstr = yang_dnode_get_string(dnode->parent, "./include-any-affinity");
+		if (!isis_srv6_affinity_maps_set(affarr, affstr, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && !isis_srv6_affinity_maps_eq(affarr, flex_algo->include_any)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/include-all-affinity
+ */
+
+static int isis_srv6_flex_algo_include_all_affinity_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_include_all_affinity_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_include_all_affinity_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *affstr;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	uint32_t affarr[SRV6_AFFARR_SIZE];
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		affstr = yang_dnode_get_string(dnode->parent, "./include-all-affinity");
+		if (!isis_srv6_affinity_maps_set(affarr, affstr, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && !isis_srv6_affinity_maps_eq(affarr, flex_algo->include_all)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/use-fapm
+ */
+
+static int isis_srv6_flex_algo_use_fapm_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_use_fapm_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_use_fapm_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	bool usefapm;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		usefapm = yang_dnode_get_bool(dnode->parent, "./use-fapm");
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && usefapm != flex_algo->use_fapm) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/flex-algo/priority
+ */
+
+static int isis_srv6_flex_algo_priority_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_priority_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_flex_algo_priority_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag;
+	int prio;
+	int algonum;
+	struct isis_srv6_flex_algo_definition *flex_algo;
+	switch (event) {
+	case NB_EV_VALIDATE:
+		area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+		area = isis_area_lookup(area_tag);
+		algonum = yang_dnode_get_uint32(dnode->parent, "./algo-num");
+		prio = yang_dnode_get_uint32(dnode->parent, "./priority");
+		flex_algo = isis_srv6_flex_algo_definition_lookup(algonum, area);
+		if (flex_algo && prio != flex_algo->priority) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/srv6-locator
+ */
+
+static int isis_srv6_srv6_locator_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *locname;
+	int algonum;
+	struct isis_srv6_locator *locator;
+	struct prefix_ipv6 prefix = { .family = AF_INET6, };
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	locname = yang_dnode_get_string(dnode, "./srv6-locator-name");
+	algonum = yang_dnode_get_uint32(dnode, "./algorithm");
+	area = isis_area_lookup(area_tag);
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (isis_srv6_locator_lookup(locname, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		locator = isis_srv6_locator_alloc(locname);
+		locator->prefix = prefix;
+		locator->algonum = algonum;
+		isis_srv6_locator_add(locator, area);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_locator_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	struct isis_area *area;
+	const char *area_tag, *locname;
+	struct isis_srv6_locator *locator;
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	locname = yang_dnode_get_string(dnode, "./srv6-locator-name");
+	area = isis_area_lookup(area_tag);
+	switch (event) {
+	case NB_EV_VALIDATE:
+		if (!isis_srv6_locator_lookup(locname, area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		locator = isis_srv6_locator_lookup(locname, area);
+		isis_srv6_locator_delete(locator, area);
+		isis_srv6_locator_free(locator);
+		break;
+	}
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_locator_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-isisd:isis/instance/srv6/srv6-locator/algorithm
+ */
+
+static int isis_srv6_srv6_locator_algorithm_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_locator_algorithm_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_srv6_locator_algorithm_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_area *area;
+	const char *area_tag, *locname;
+	struct isis_srv6_locator *locator;
+	int algonum, algonum_orig;
+	area_tag = yang_dnode_get_string(dnode->parent->parent->parent, "./area-tag");
+	locname = yang_dnode_get_string(dnode->parent, "./srv6-locator-name");
+	algonum = yang_dnode_get_uint32(dnode->parent, "./algorithm");
+	area = isis_area_lookup(area_tag);
+	locator = isis_srv6_locator_lookup(locname, area);
+	switch (event) {
+	case NB_EV_VALIDATE:
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		if (!locator) {
+			break;
+		}
+		algonum_orig = locator->algonum;
+		locator->algonum = algonum;
+		if (algonum != algonum_orig) {
+			lsp_regenerate_schedule(area, area->is_type, 0);
+		}
+		break;
+	}
+	return NB_OK;
+}
+
+/*
+ * XPath:
+ * /frr-interface:lib/interface/frr-isisd:isis/srv6/affinity-flex-algo
+ */
+
+static int isis_srv6_if_affinity_flex_algo_create(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_if_affinity_flex_algo_destroy(enum nb_event event, const struct lyd_node *dnode)
+{
+	return NB_OK;
+}
+
+static int isis_srv6_if_affinity_flex_algo_modify(enum nb_event event, const struct lyd_node *dnode, union nb_resource *resource)
+{
+	struct isis_circuit *circuit;
+	struct interface *ifp;
+	struct isis_area *area;
+	struct vrf *vrf;
+	const char *ifname, *vrfname, *area_tag;
+	const char *affstr;
+	uint32_t affarr[SRV6_AFFARR_SIZE] = {};
+	ifname = yang_dnode_get_string(dnode->parent->parent->parent, "./name");
+	vrfname = yang_dnode_get_string(dnode->parent->parent->parent, "./vrf");
+	area_tag = yang_dnode_get_string(dnode->parent->parent, "./area-tag");
+	area = isis_area_lookup(area_tag);
+	vrf = vrf_lookup_by_name(vrfname);
+	assert(vrf);
+	ifp = if_lookup_by_name(ifname, vrf->vrf_id);
+	if (!ifp) {
+		return NB_OK;
+	}
+	circuit = circuit_lookup_by_ifp(ifp, area->circuit_list);
+	if (!circuit) {
+		return NB_OK;
+	}
+	switch (event) {
+	case NB_EV_VALIDATE:
+		affstr = yang_dnode_get_string(dnode, ".");
+		if (!isis_srv6_affinity_maps_set(affarr, affstr, circuit->area)) {
+			return NB_ERR_VALIDATION;
+		}
+		break;
+	case NB_EV_PREPARE:
+	case NB_EV_ABORT:
+		break;
+	case NB_EV_APPLY:
+		affstr = yang_dnode_get_string(dnode, ".");
+		isis_srv6_affinity_maps_set(affarr, affstr, circuit->area);
+		for (int i = 0; i < SRV6_AFFARR_SIZE; ++i) {
+			circuit->affinity_flex_algo[i] = affarr[i];
+		}
+		/* XXX: */
+		lsp_regenerate_schedule(circuit->area, circuit->is_type, 0);
+		break;
+	}
+	return NB_OK;
+}
+
 /* clang-format off */
 const struct frr_yang_module_info frr_isisd_info = {
 	.name = "frr-isisd",
@@ -3482,6 +4234,150 @@ const struct frr_yang_module_info frr_isisd_info = {
 				.cli_show = cli_show_ip_isis_mt_ipv6_dstsrc,
 				.modify = lib_interface_isis_multi_topology_ipv6_dstsrc_modify,
 			},
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6,
+				.create = isis_srv6_srv6_create,
+				.destroy = isis_srv6_srv6_destroy,
+				.modify = isis_srv6_srv6_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l1-to-l2",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_export_fapm_from_l1_to_l2,
+				.create = isis_srv6_flex_algo_export_fapm_from_l1_to_l2_create,
+				.destroy = isis_srv6_flex_algo_export_fapm_from_l1_to_l2_destroy,
+				.modify = isis_srv6_flex_algo_export_fapm_from_l1_to_l2_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo-export-fapm-from-l2-to-l1",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_export_fapm_from_l2_to_l1,
+				.create = isis_srv6_flex_algo_export_fapm_from_l2_to_l1_create,
+				.destroy = isis_srv6_flex_algo_export_fapm_from_l2_to_l1_destroy,
+				.modify = isis_srv6_flex_algo_export_fapm_from_l2_to_l1_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/affinity-map",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_affinity_map,
+				.create = isis_srv6_affinity_map_create,
+				.destroy = isis_srv6_affinity_map_destroy,
+				.modify = isis_srv6_affinity_map_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/affinity-map/affinity-map-name",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_affinity_map_affinity_map_name,
+				.create = isis_srv6_affinity_map_affinity_map_name_create,
+				.destroy = isis_srv6_affinity_map_affinity_map_name_destroy,
+				.modify = isis_srv6_affinity_map_affinity_map_name_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/affinity-map/bit-position",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_affinity_map_bit_position,
+				.create = isis_srv6_affinity_map_bit_position_create,
+				.destroy = isis_srv6_affinity_map_bit_position_destroy,
+				.modify = isis_srv6_affinity_map_bit_position_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo,
+				.create = isis_srv6_flex_algo_create,
+				.destroy = isis_srv6_flex_algo_destroy,
+				.modify = isis_srv6_flex_algo_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/algo-num",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_algo_num,
+				.create = isis_srv6_flex_algo_algo_num_create,
+				.destroy = isis_srv6_flex_algo_algo_num_destroy,
+				.modify = isis_srv6_flex_algo_algo_num_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/exclude-affinity",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_exclude_affinity,
+				.create = isis_srv6_flex_algo_exclude_affinity_create,
+				.destroy = isis_srv6_flex_algo_exclude_affinity_destroy,
+				.modify = isis_srv6_flex_algo_exclude_affinity_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/include-any-affinity",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_include_any_affinity,
+				.create = isis_srv6_flex_algo_include_any_affinity_create,
+				.destroy = isis_srv6_flex_algo_include_any_affinity_destroy,
+				.modify = isis_srv6_flex_algo_include_any_affinity_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/include-all-affinity",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_include_all_affinity,
+				.create = isis_srv6_flex_algo_include_all_affinity_create,
+				.destroy = isis_srv6_flex_algo_include_all_affinity_destroy,
+				.modify = isis_srv6_flex_algo_include_all_affinity_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/use-fapm",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_use_fapm,
+				.create = isis_srv6_flex_algo_use_fapm_create,
+				.destroy = isis_srv6_flex_algo_use_fapm_destroy,
+				.modify = isis_srv6_flex_algo_use_fapm_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/flex-algo/priority",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_flex_algo_priority,
+				.create = isis_srv6_flex_algo_priority_create,
+				.destroy = isis_srv6_flex_algo_priority_destroy,
+				.modify = isis_srv6_flex_algo_priority_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/srv6-locator",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_srv6_locator,
+				.create = isis_srv6_srv6_locator_create,
+				.destroy = isis_srv6_srv6_locator_destroy,
+				.modify = isis_srv6_srv6_locator_modify,
+			}
+		},
+		{
+			.xpath = "/frr-isisd:isis/instance/srv6/srv6-locator/algorithm",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_srv6_locator_algorithm,
+				.create = isis_srv6_srv6_locator_algorithm_create,
+				.destroy = isis_srv6_srv6_locator_algorithm_destroy,
+				.modify = isis_srv6_srv6_locator_algorithm_modify,
+			}
+		},
+		{
+			.xpath = "/frr-interface:lib/interface/frr-isisd:isis/srv6/affinity-flex-algo",
+			.cbs = {
+				.cli_show = cli_show_isis_srv6_if_affinity_flex_algo,
+				.create = isis_srv6_if_affinity_flex_algo_create,
+				.destroy = isis_srv6_if_affinity_flex_algo_destroy,
+				.modify = isis_srv6_if_affinity_flex_algo_modify,
+			}
 		},
 		{
 			.xpath = NULL,

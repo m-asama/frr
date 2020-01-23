@@ -65,6 +65,7 @@ struct isis_vertex {
 	struct list *parents;  /* list of parents for ECMP */
 	struct hash *firsthops; /* first two hops to neighbor */
 	uint64_t insert_counter;
+	bool down;
 };
 
 /* Vertex Queue and associated functions */
@@ -307,6 +308,7 @@ struct isis_spftree {
 	int family;
 	int level;
 	enum spf_tree_id tree_id;
+	int algonum;
 	bool hopcount_metric;
 };
 

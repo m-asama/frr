@@ -263,7 +263,7 @@ struct isis_route_info *isis_route_create(struct prefix *prefix,
 					  uint32_t depth,
 					  struct list *adjacencies,
 					  struct isis_area *area,
-					  struct route_table *table)
+					  struct route_table *table, bool down)
 {
 	struct route_node *route_node;
 	struct isis_route_info *rinfo_new, *rinfo_old, *route_info = NULL;
@@ -311,6 +311,8 @@ struct isis_route_info *isis_route_create(struct prefix *prefix,
 	}
 
 	SET_FLAG(route_info->flag, ISIS_ROUTE_FLAG_ACTIVE);
+	if (down)
+		SET_FLAG(route_info->flag, ISIS_ROUTE_FLAG_DOWN);
 	route_node->info = route_info;
 
 	return route_info;
@@ -407,9 +409,8 @@ static void _isis_route_verify_table(struct isis_area *area,
 		 * therefore must
 		 * delete node from level tables as well before deleting
 		 * route info. */
-		for (int level = ISIS_LEVEL1; level <= ISIS_LEVEL2; level++) {
-			drnode = srcdest_rnode_lookup(tables[level - 1],
-						      dst_p, src_p);
+		for (int i = 0; tables[i]; i++) {
+			drnode = srcdest_rnode_lookup(tables[i], dst_p, src_p);
 			if (!drnode)
 				continue;
 
@@ -442,17 +443,15 @@ void isis_route_verify_table(struct isis_area *area, struct route_table *table)
  * FIXME: Is it right place to do it at all? Maybe we should push both levels
  * to the RIB with different zebra route types and let RIB handle this? */
 void isis_route_verify_merge(struct isis_area *area,
-			     struct route_table *level1_table,
-			     struct route_table *level2_table)
+			     struct route_table **tables)
 {
-	struct route_table *tables[] = { level1_table, level2_table };
 	struct route_table *merge;
 	struct route_node *rnode, *mrnode;
 
 	merge = srcdest_table_init();
 
-	for (int level = ISIS_LEVEL1; level <= ISIS_LEVEL2; level++) {
-		for (rnode = route_top(tables[level - 1]); rnode;
+	for (int i = 0; tables[i]; i++) {
+		for (rnode = route_top(tables[i]); rnode;
 		     rnode = srcdest_route_next(rnode)) {
 			struct isis_route_info *rinfo = rnode->info;
 			if (!rinfo)

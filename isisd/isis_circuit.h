@@ -31,6 +31,7 @@
 
 #include "isis_constants.h"
 #include "isis_common.h"
+#include "isis_srv6.h"
 
 struct isis_lsp;
 
@@ -144,6 +145,8 @@ struct isis_circuit {
 	uint32_t
 		desig_changes[2]; /* lanLxDesignatedIntermediateSystemChanges */
 	uint32_t rej_adjacencies; /* rejectedAdjacencies */
+
+	uint32_t affinity_flex_algo[SRV6_AFFARR_SIZE];
 
 	QOBJ_FIELDS
 };

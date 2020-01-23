@@ -56,6 +56,7 @@
 #include "isisd/isis_bfd.h"
 #include "isisd/isis_lsp.h"
 #include "isisd/isis_mt.h"
+#include "isisd/isis_srv6.h"
 #include "isisd/fabricd.h"
 
 /* Default configuration file name */
@@ -241,6 +242,7 @@ int main(int argc, char **argv, char **envp)
 	isis_mpls_te_init();
 	lsp_init();
 	mt_init();
+	isis_srv6_init();
 
 	/* create the global 'isis' instance */
 	isis_new(1);
